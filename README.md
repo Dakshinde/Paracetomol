@@ -4,7 +4,7 @@ Static Code Vulnerability & Secret Scanner with AI Analysis.
 
 Scans a project (uploaded as a `.zip` or cloned from a public Git URL) with
 **Semgrep** (SAST / OWASP Top Ten) and **Gitleaks** (hardcoded secrets),
-then optionally enriches each finding with **DeepSeek AI** for a plain-English
+then optionally enriches each finding with **Gemini AI** for a plain-English
 explanation, severity assessment, and a suggested fix — exported as a `.patch`
 file. A **GitHub Actions** workflow gates pull requests on scan results.
 
@@ -14,7 +14,7 @@ file. A **GitHub Actions** workflow gates pull requests on scan results.
 Streamlit UI  ->  Flask API  ->  Semgrep + Gitleaks  ->  Results Parser
                                                               |
                                                               v
-                                                   DeepSeek AI Analysis
+                                                    Gemini AI Analysis
                                                               |
                                                               v
                                                    Patch Generator (.patch)
@@ -26,7 +26,7 @@ Streamlit UI  ->  Flask API  ->  Semgrep + Gitleaks  ->  Results Parser
 - Git
 - [Semgrep](https://semgrep.dev/docs/getting-started/) (installed via `requirements.txt`)
 - [Gitleaks](https://github.com/gitleaks/gitleaks#installing) (install separately — it's a Go binary, not a pip package)
-- A DeepSeek API key ([platform.deepseek.com](https://platform.deepseek.com))
+- A Gemini API key ([Google AI Studio](https://aistudio.google.com/app/apikey))
 
 ## 2. Setup
 
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 # Configure secrets
 cp .env.example .env
-# then edit .env and set DEEPSEEK_API_KEY
+# then edit .env and set GEMINI_API_KEY and GEMINI_MODEL
 
 # Verify the scanners are installed
 semgrep --version
@@ -87,7 +87,7 @@ security-scanner/
 │   │   ├── semgrep_runner.py
 │   │   ├── gitleaks_runner.py
 │   │   └── orchestrator.py   # runs both scanners + AI + patches
-│   ├── ai/deepseek_client.py # DeepSeek API integration
+│   ├── ai/gemini_client.py # Gemini API integration
 │   ├── ingestion/
 │   │   ├── zip_handler.py    # safe ZIP extraction (zip-slip guarded)
 │   │   └── git_handler.py    # public repo cloning

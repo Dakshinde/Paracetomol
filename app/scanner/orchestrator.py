@@ -1,6 +1,6 @@
 """
 Coordinates a full scan: run Semgrep + Gitleaks, optionally enrich each
-finding with DeepSeek analysis and generate patch files, then persist a
+finding with Gemini analysis and generate patch files, then persist a
 JSON report.
 """
 
@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from app.ai.deepseek_client import DeepSeekError, analyze_finding
+from app.ai.gemini_client import GeminiError, analyze_finding
 from app.config import Config
 from app.remediation.patch_generator import generate_patch
 from app.scanner.gitleaks_runner import GitleaksError, run_gitleaks
@@ -19,7 +19,10 @@ from app.scanner.semgrep_runner import SemgrepError, run_semgrep
 
 
 def run_full_scan(
-    target_dir: Path, use_ai: bool = True, cleanup: bool = True
+    target_dir: Path,
+    use_ai: bool = True,
+    cleanup: bool = True,
+    source_label: str | None = None,
 ) -> dict[str, Any]:
     """
     Run the full scan pipeline against target_dir.
@@ -51,9 +54,20 @@ def run_full_scan(
                 finding["ai_analysis"] = analysis
                 patch_path = generate_patch(target_dir, finding, analysis)
                 finding["patch_file"] = str(patch_path) if patch_path else None
-            except DeepSeekError as exc:
+                finding["patch_text"] = (
+                    patch_path.read_text() if patch_path else None
+                )
+            except GeminiError as exc:
                 finding["ai_analysis"] = None
                 finding["ai_error"] = str(exc)
+
+    for finding in all_findings:
+        finding_path = finding.get("path")
+        if finding_path:
+            try:
+                finding["path"] = str(Path(finding_path).relative_to(target_dir))
+            except ValueError:
+                pass
 
     severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "unknown": 0}
     for f in all_findings:
@@ -65,6 +79,7 @@ def run_full_scan(
 
     report = {
         "scan_id": uuid.uuid4().hex[:12],
+        "source": source_label or target_dir.name,
         "duration_seconds": round(time.time() - started, 2),
         "total_findings": len(all_findings),
         "semgrep_findings": len(semgrep_findings),

@@ -4,6 +4,7 @@ so users can review and apply remediations with `git apply`.
 """
 
 import difflib
+import textwrap
 import uuid
 from pathlib import Path
 from typing import Any
@@ -39,9 +40,19 @@ def generate_patch(
     start = max(start, 0)
     end = min(end, len(original_lines))
 
+    original_block = original_lines[start:end]
+    base_indent = ""
+    if original_block:
+        base_indent = original_block[0][: -len(original_block[0].lstrip())]
+    replacement = textwrap.dedent(fixed_code).splitlines()
+    replacement_lines = [
+        f"{base_indent}{line}\n" if line.strip() else "\n"
+        for line in replacement
+    ]
+
     new_lines = (
         original_lines[:start]
-        + [line + "\n" for line in fixed_code.splitlines()]
+        + replacement_lines
         + original_lines[end:]
     )
 

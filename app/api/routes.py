@@ -51,7 +51,11 @@ def scan_upload():
     finally:
         save_path.unlink(missing_ok=True)
 
-    report = run_full_scan(target_dir, use_ai=use_ai)
+    report = run_full_scan(
+        target_dir,
+        use_ai=use_ai,
+        source_label=f"Uploaded ZIP: {uploaded.filename}",
+    )
     return jsonify(report), 200
 
 
@@ -70,7 +74,12 @@ def scan_git():
     except GitCloneError as exc:
         return jsonify({"error": str(exc)}), 400
 
-    report = run_full_scan(target_dir, use_ai=use_ai)
+    report = run_full_scan(
+        target_dir,
+        use_ai=use_ai,
+        source_label=f"Git repository: {repo_url}"
+        + (f" (branch: {branch})" if branch else ""),
+    )
     return jsonify(report), 200
 
 

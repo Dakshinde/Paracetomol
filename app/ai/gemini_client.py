@@ -1,5 +1,5 @@
 """
-Thin client around the DeepSeek chat-completions API used to turn raw
+Thin client around the Gemini generateContent API used to turn raw
 Semgrep/Gitleaks findings into plain-English explanations and suggested
 fixes / patches.
 """
@@ -23,50 +23,48 @@ _SYSTEM_PROMPT = (
 )
 
 
-class DeepSeekError(Exception):
+class GeminiError(Exception):
     pass
 
 
-def _call_deepseek(user_prompt: str) -> str:
-    if not Config.DEEPSEEK_API_KEY:
-        raise DeepSeekError(
-            "DEEPSEEK_API_KEY is not set. Add it to your .env file."
-        )
+def _call_gemini(user_prompt: str) -> str:
+    if not Config.GEMINI_API_KEY:
+        raise GeminiError("GEMINI_API_KEY is not set. Add it to your .env file.")
 
-    headers = {
-        "Authorization": f"Bearer {Config.DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json",
-    }
+    url = (
+        f"{Config.GEMINI_API_URL}/{Config.GEMINI_MODEL}:generateContent"
+        f"?key={Config.GEMINI_API_KEY}"
+    )
     payload = {
-        "model": Config.DEEPSEEK_MODEL,
-        "messages": [
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.2,
-        "stream": False,
+        "systemInstruction": {"parts": [{"text": _SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+        "generationConfig": {
+            "temperature": 0.2,
+            "responseMimeType": "application/json",
+        },
     }
 
     try:
-        resp = requests.post(
-            Config.DEEPSEEK_API_URL, headers=headers, json=payload, timeout=60
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=60,
         )
-        resp.raise_for_status()
+        response.raise_for_status()
     except requests.RequestException as exc:
-        raise DeepSeekError(f"DeepSeek API request failed: {exc}") from exc
+        raise GeminiError(f"Gemini API request failed: {exc}") from exc
 
-    data = resp.json()
+    data = response.json()
     try:
-        return data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError) as exc:
-        raise DeepSeekError(f"Unexpected DeepSeek response shape: {data}") from exc
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise GeminiError(f"Unexpected Gemini response shape: {data}") from exc
 
 
 def analyze_finding(finding: dict[str, Any]) -> dict[str, Any]:
     """
-    Send one normalized finding (from semgrep_runner or gitleaks_runner) to
-    DeepSeek and return a structured analysis dict. Falls back to a safe
-    default if the API is unavailable or returns malformed content.
+    Send one normalized finding to Gemini and return a structured analysis.
     """
     prompt = (
         f"Tool: {finding.get('tool')}\n"
@@ -77,17 +75,15 @@ def analyze_finding(finding: dict[str, Any]) -> dict[str, Any]:
         f"Code:\n{finding.get('code_snippet') or finding.get('match') or ''}\n"
     )
 
-    raw_content = _call_deepseek(prompt)
+    raw_content = _call_gemini(prompt)
     cleaned = raw_content.strip().removeprefix("```json").removesuffix("```").strip()
 
     try:
-        analysis = json.loads(cleaned)
+        return json.loads(cleaned)
     except json.JSONDecodeError:
-        analysis = {
+        return {
             "explanation": raw_content,
             "severity_assessment": "unknown",
             "fixed_code": "",
             "remediation_notes": "Could not parse structured response.",
         }
-
-    return analysis

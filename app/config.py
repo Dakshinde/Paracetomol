@@ -30,12 +30,13 @@ class Config:
     FLASK_DEBUG = os.getenv("FLASK_DEBUG", "true").lower() == "true"
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "50")) * 1024 * 1024
 
-    # --- DeepSeek API ---
-    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-    DEEPSEEK_API_URL = os.getenv(
-        "DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions"
+    # --- Gemini API ---
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    GEMINI_API_URL = os.getenv(
+        "GEMINI_API_URL",
+        "https://generativelanguage.googleapis.com/v1beta/models",
     )
-    DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 
     # --- Scanners ---
     SEMGREP_CONFIG = os.getenv("SEMGREP_CONFIG", "p/owasp-top-ten")
