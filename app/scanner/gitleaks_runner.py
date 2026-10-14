@@ -33,7 +33,7 @@ def run_gitleaks(target_dir: Path) -> list[dict[str, Any]]:
         report_path = Path(tmp.name)
 
     cmd = [
-        "gitleaks",
+        Config.GITLEAKS_BINARY,
         "detect",
         "--source",
         str(target_dir),
@@ -55,7 +55,8 @@ def run_gitleaks(target_dir: Path) -> list[dict[str, Any]]:
         )
     except FileNotFoundError as exc:
         raise GitleaksError(
-            "Gitleaks is not installed or not on PATH."
+            "Gitleaks is not installed. Install it or set GITLEAKS_BINARY "
+            "to its executable path."
         ) from exc
     except subprocess.TimeoutExpired as exc:
         raise GitleaksError("Gitleaks scan timed out.") from exc

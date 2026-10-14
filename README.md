@@ -47,6 +47,16 @@ semgrep --version
 gitleaks version
 ```
 
+For Render, install Gitleaks into the writable project directory during the
+API service build:
+
+```bash
+mkdir -p bin && curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz && tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks && install /tmp/gitleaks bin/gitleaks
+```
+
+The scanner automatically uses `bin/gitleaks` when it exists. Do not install
+it under `/usr/local/bin` on Render because that directory is read-only.
+
 ## 3. Run it
 
 Start the Flask API (terminal 1):

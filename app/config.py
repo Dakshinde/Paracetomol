@@ -41,6 +41,11 @@ class Config:
     # --- Scanners ---
     SEMGREP_CONFIG = os.getenv("SEMGREP_CONFIG", "p/owasp-top-ten")
     SCAN_TIMEOUT_SECONDS = int(os.getenv("SCAN_TIMEOUT_SECONDS", "300"))
+    _bundled_gitleaks = BASE_DIR / "bin" / "gitleaks"
+    GITLEAKS_BINARY = os.getenv(
+        "GITLEAKS_BINARY",
+        str(_bundled_gitleaks) if _bundled_gitleaks.exists() else "gitleaks",
+    )
 
     @classmethod
     def ensure_dirs(cls):
