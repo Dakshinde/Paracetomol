@@ -6,3 +6,4 @@ GitPython
 pydantic
 semgrep
 dotenv
+gunicorn
